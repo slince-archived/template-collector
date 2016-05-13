@@ -47,5 +47,9 @@ interface ParserInterface
      */
     function parse(Url $url, $content);
 
+    /**
+     * 获取当前解析器支持的类型
+     * @return array
+     */
     static function getSupportTypes();
 }

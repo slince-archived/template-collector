@@ -19,6 +19,11 @@ class HtmlParser extends Parser
         $this->domParser = new ParserDom();
     }
 
+    /**
+     * 从内容里提取所有的页面链接
+     * @param $content
+     * @return array
+     */
     function extractPageUrls($content)
     {
         $this->domParser->load($content);
@@ -28,6 +33,11 @@ class HtmlParser extends Parser
         }, $aNodes);
     }
 
+    /**
+     * 从内容里提取所有的图片链接链接
+     * @param $content
+     * @return array
+     */
     function extractImageUrls($content)
     {
         $this->domParser->load($content);
@@ -37,6 +47,11 @@ class HtmlParser extends Parser
         }, $imgNodes);
     }
 
+    /**
+     * 从内容里提取所有的样式链接
+     * @param $content
+     * @return array
+     */
     function extractCssUrls($content)
     {
         $this->domParser->load($content);
@@ -46,6 +61,11 @@ class HtmlParser extends Parser
         }, $cssNodes);
     }
 
+    /**
+     * 从内容里提取所有的脚本链接
+     * @param $content
+     * @return array
+     */
     function extractScriptUrls($content)
     {
         $this->domParser->load($content);
@@ -55,6 +75,10 @@ class HtmlParser extends Parser
         }, $scriptNodes);
     }
 
+    /**
+     * 获取当前解析器支持的类型
+     * @return array
+     */
     static function getSupportTypes()
     {
         return [ParserInterface::TYPE_HTML];

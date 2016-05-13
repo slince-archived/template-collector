@@ -225,7 +225,7 @@ class Collector
     /**
      * 运行
      */
-    function run()
+    public function run()
     {
         $this->entranceUrl = Url::createFromUrl($this->rawEntranceUrl);
         $this->processUrl($this->entranceUrl);
@@ -300,7 +300,7 @@ class Collector
             case 'png':
             case 'bmp':
             case 'gif':
-                $type = ParserInterface::TYPE_SCRIPT;
+                $type = ParserInterface::TYPE_IMAGE;
                 break;
         }
         return $type;
@@ -334,7 +334,7 @@ class Collector
      * @param $type
      * @return ParserInterface
      */
-    function getParser($type)
+    public function getParser($type)
     {
         $parser = null;
         foreach ($this->supportedParsers as $parser) {
