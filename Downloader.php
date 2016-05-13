@@ -9,7 +9,6 @@ class Downloader
 {
     function download($url)
     {
-        var_dump(file_get_contents($url));
         return @file_get_contents($url);
     }
 }

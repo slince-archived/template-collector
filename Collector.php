@@ -71,7 +71,13 @@ class Collector
      * 解析器
      * @var array
      */
-    protected $parsers = [
+    protected $parsers = [];
+
+    /**
+     * 支持的解析器
+     * @var array
+     */
+    protected $supportedParsers = [
         'Slince\Collector\Parser\HtmlParser',
         'Slince\Collector\Parser\CssParser',
         'Slince\Collector\Parser\ImageParser',
@@ -231,11 +237,10 @@ class Collector
      */
     protected function processUrl(Url $url)
     {
-        var_dump(__LINE__);
         if ($this->filterUrl($url->getRawUrl())) {
-            $content = $this->downloader->download($url);
+            $content = $this->downloader->download($url->getRawUrl());
             if ($content !== false) {
-                $repository = $this->getParser($this->getContentType($url))->parse($content);
+                $repository = $this->getParser($this->getContentType($url))->parse($url, $content);
                 $this->processRepository($repository);
             }
         }
@@ -332,7 +337,7 @@ class Collector
     function getParser($type)
     {
         $parser = null;
-        foreach ($this->supportParsers as $parser) {
+        foreach ($this->supportedParsers as $parser) {
             if (in_array($type, call_user_func([
                 $parser,
                 'getSupportTypes'

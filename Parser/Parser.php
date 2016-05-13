@@ -5,16 +5,20 @@
  */
 namespace Slince\Collector\Parser;
 
+use Slince\Collector\Url;
+
 abstract class Parser implements ParserInterface
 {
+
     /**
      * 解析内容
+     * @param Url $url
      * @param $content
      * @return Repository
      */
-    function parse($content)
+    function parse(Url $url, $content)
     {
-        $repository = $this->createRepository();
+        $repository = $this->createRepository($url, $content);
         $repository->setContent($content);
         $repository->setPageUrls($this->extractPageUrls($content));
         $repository->setImageUrls($this->extractImageUrls($content));
@@ -31,9 +35,9 @@ abstract class Parser implements ParserInterface
 
     abstract protected function extractScriptUrls($content);
 
-    protected function createRepository()
+    protected function createRepository(Url $url, $content)
     {
-        return new Repository();
+        return new Repository($url, $content);
     }
 }
 

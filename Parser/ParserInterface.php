@@ -5,6 +5,8 @@
  */
 namespace Slince\Collector\Parser;
 
+use Slince\Collector\Url;
+
 interface ParserInterface
 {
     /**
@@ -39,10 +41,11 @@ interface ParserInterface
 
     /**
      * 解析内容
+     * @param Url $url
      * @param $content
      * @return Repository
      */
-    function parse($content);
+    function parse(Url $url, $content);
 
     static function getSupportTypes();
 }

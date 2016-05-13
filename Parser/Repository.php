@@ -19,9 +19,9 @@ class Repository
     protected $cssUrls = [];
     protected $scriptUrls = [];
 
-    function __construct($url, $content, array $pageUrls = [], array $imageUrls = [], array $cssUrls = [], array $scriptUrls = [])
+    function __construct(Url $url, $content, array $pageUrls = [], array $imageUrls = [], array $cssUrls = [], array $scriptUrls = [])
     {
-        $this->url = Url::createFromUrl($url);
+        $this->url = $url;
         $this->content = $content;
         $this->pageUrls = $pageUrls;
         $this->imageUrls = $imageUrls;
