@@ -4,7 +4,7 @@
 
 ## 安装
  * 基于composer安装
-  `composer require slince/rss-collector *@dev `
+  `composer require slince/template-collector *@dev `
  * 要求
     - php >= 5.5.9
 
@@ -15,8 +15,10 @@
 use Slince\Collector\Collector;
 use Slince\Event\Event;
 
+$savePath = __DIR__ . '/html'; //保存路径
+$entranceUrl = 'http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html'; //入口链接
 //创建采集器
-$collector = new Collector(__DIR__ . '/html', 'http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html');
+$collector = new Collector($savePath, $entranceUrl);
 //绑定事件
 $collector->getDispatcher()->bind(Collector::EVENT_CAPTURED_URL_REPOSITORY, function(Event $event){
     $repository = $event->getArgument('repository');
