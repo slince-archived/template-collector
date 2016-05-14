@@ -35,8 +35,8 @@ $collector->run();
 - `Collector::EVENT_CAPTURED_URL_REPOSITORY` 页面采集完成事件，当链接内容采集完毕时触发
 
 ### 设置允许抓取的host
-为了避免采集器过分采集，默认情况下采集器时不会抓取host和入口链接的host不符的链接，所以
-如果你要采集的网站的资源文件使用了其它域名，那么您需要设置允许抓取的host
+为了避免采集器过分采集，默认情况下采集器不会抓取host和入口链接的host不符的链接，所以如果你要采集的网站的资源文件使用了
+其它域名，那么您需要设置允许抓取的host
 ```
 $collector->setAllowedCaptureHosts([
     ...
