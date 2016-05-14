@@ -12,6 +12,7 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">=5.5.9",
+        "slince/event": "*@dev",
         "bupt1987/html-parser": "~3.0",
         "symfony/filesystem": "~3.0"
     },

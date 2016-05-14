@@ -28,6 +28,9 @@ class CssParser extends Parser
     {
         preg_match_all("/url\s*\((.*\.(?:jpg|jpeg|gif|png|bmp|svg|ttf|eot|woff|otf|woff2).*)\)/Ui", $content, $matches);
         $urls = empty($matches[1]) ? [] : $matches[1];
+        array_walk($urls, function (&$url) {
+            $url = trim($url, '"\'');
+        });
         return $urls;
     }
 
@@ -40,6 +43,9 @@ class CssParser extends Parser
     {
         preg_match_all("/url\s*\((.*\.css.*)\)/Ui", $content, $matches);
         $urls = empty($matches[1]) ? [] : $matches[1];
+        array_walk($urls, function (&$url) {
+            $url = trim($url, '"\'');
+        });
         return $urls;
     }
 

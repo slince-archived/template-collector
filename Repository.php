@@ -233,8 +233,8 @@ class Repository
             $newRawUrl = $rawUrl;
         } else {
             if ($rawUrl{0} !== '/') {
-                if ((pathinfo($this->url->getPath(), PATHINFO_EXTENSION) == '')) {
-                    $pathname = $this->url->getPath() . '/' . $rawUrl;
+                if ($this->url->getParameter('extension') == '') {
+                    $pathname = rtrim($this->url->getPath(), '') . '/' . $rawUrl;
                 } else {
                     $pathname = dirname($this->url->getPath()) . '/' . $rawUrl;
                 }
@@ -243,6 +243,8 @@ class Repository
             }
             $newRawUrl = $this->url->getOrigin() . $pathname;;
         }
-        return Url::createFromUrl($newRawUrl);
+        $url =  Url::createFromUrl($newRawUrl);
+        $url->setRawUrl($rawUrl);
+        return $url;
     }
 }

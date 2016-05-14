@@ -45,7 +45,7 @@ class HtmlParser extends Parser
         $this->domParser->load($content);
         $imgNodes = $this->domParser->find('img');
         return array_map(function($imgNode){
-            return $imgNode->getAttr('href');
+            return $imgNode->getAttr('src');
         }, $imgNodes);
     }
 
@@ -73,7 +73,7 @@ class HtmlParser extends Parser
         $this->domParser->load($content);
         $scriptNodes = $this->domParser->find('script');
         return array_map(function($scriptNode){
-            return $scriptNode->getAttr('href');
+            return $scriptNode->getAttr('src');
         }, $scriptNodes);
     }
 

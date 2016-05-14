@@ -7,10 +7,30 @@ namespace Slince\Collector;
 
 use Slince\Collector\Exception\UnsupportedTypeException;
 use Slince\Collector\Parser\ParserInterface;
+use Slince\Event\Dispatcher;
+use Slince\Event\Event;
 use Symfony\Component\Filesystem\Filesystem;
 
 class Collector
 {
+    /**
+     * 过滤url事件
+     * @var string
+     */
+    const EVENT_FILTER_URL = 'fileUrl';
+
+    /**
+     * 采集url内容事件
+     * @var string
+     */
+    const EVENT_CAPTURE_URL_REPOSITORY = 'captureUrlRepository';
+
+    /**
+     * 采集完毕url内容事件
+     * @var string
+     */
+    const EVENT_CAPTURED_URL_REPOSITORY = 'capturedUrlRepository';
+
     /**
      * 入口链接
      * @var string
@@ -97,12 +117,18 @@ class Collector
      */
     protected $filesystem;
 
+    /**
+     * @var Dispatcher
+     */
+    protected $dispatcher;
+
     public function __construct($savePath, $rawEntranceUrl = null, array $urlPatterns = [])
     {
         $this->rawEntranceUrl = $rawEntranceUrl;
         $this->urlPatterns = $urlPatterns;
         $this->downloader = new Downloader();
         $this->filesystem = new Filesystem();
+        $this->dispatcher = new Dispatcher();
         $this->setSavePath($savePath);
     }
 
@@ -122,6 +148,14 @@ class Collector
         return $this->blacklistUrls;
     }
 
+    /**
+     * @param array $whitelistUrls
+     */
+    public function setWhitelistUrls($whitelistUrls)
+    {
+        $this->whitelistUrls = $whitelistUrls;
+    }
+    
     /**
      * @return array
      */
@@ -245,6 +279,14 @@ class Collector
     }
 
     /**
+     * @return Dispatcher
+     */
+    public function getDispatcher()
+    {
+        return $this->dispatcher;
+    }
+
+    /**
      * 运行
      */
     public function run()
@@ -278,7 +320,11 @@ class Collector
      */
     protected function processRepository(Repository $repository)
     {
-//        print_r($repository);exit;
+        //页面内容开始采集
+        $this->dispatcher->dispatch(self::EVENT_CAPTURE_URL_REPOSITORY, new Event(
+            self::EVENT_CAPTURE_URL_REPOSITORY, $this, [
+            'repository' => $repository
+        ]));
         $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
         //如果链接没有扩展名，并且也没有预定义文件名则生成随机文件名
         if ($repository->getUrl()->getParameter('extension') == '') {
@@ -286,16 +332,26 @@ class Collector
             if (!$filename) {
                 $filename = $this->generateFilename();
             }
-            $newFile .= $filename . '.html';
+            $newFile = rtrim($newFile, '/') . '/' . $filename . '.html';
         }
         $content = $repository->getContent();
+        //静态资源允许跨host
         if ($repository->getUrl()->getHost() != $this->entranceUrl->getHost()) {
-            if (in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)) {
+            if (in_array($repository->getContentType(), [ParserInterface::TYPE_CSS, ParserInterface::TYPE_IMAGE,
+                    ParserInterface::TYPE_SCRIPT, ParserInterface::TYPE_MEDIA])
+                && in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)) {
                 $content = str_replace($repository->getUrl()->getHost(), $this->entranceUrl->getHost());
+            } else {
+                return false;
             }
         }
         $this->filesystem->dumpFile($newFile, $content);
         $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
+        //页面内容采集完毕
+        $this->dispatcher->dispatch(self::EVENT_CAPTURED_URL_REPOSITORY, new Event(
+            self::EVENT_CAPTURED_URL_REPOSITORY, $this, [
+            'repository' => $repository
+        ]));
         foreach ($repository->getImageUrls() as $url) {
             $this->processUrl($url);
         }
@@ -306,6 +362,7 @@ class Collector
             $this->processUrl($url);
         }
         foreach ($repository->getPageUrls() as $url) {
+//            echo $url->getRawUrl(), "\r\n";
             $this->processUrl($url);
         }
     }
@@ -364,10 +421,23 @@ class Collector
      */
     protected function filterUrl(Url $url)
     {
+        //已经下载的链接不再处理
         if (in_array($url->getRawUrl(), $this->downloadedUrls)) {
             return false;
         }
-        $pass = in_array($url->getRawUrl(), $this->whitelistUrls) || !in_array($url->getRawUrl(), $this->blacklistUrls);
+        //触发过滤url事件
+        $this->dispatcher->dispatch(self::EVENT_FILTER_URL, new Event(
+            self::EVENT_FILTER_URL, $this, [
+            'url' => $url
+        ]));
+        $pass = true;
+        if (!in_array($url->getRawUrl(), $this->whitelistUrls)) {
+            if (in_array($url->getRawUrl(), $this->blacklistUrls) ||
+                (preg_match("/^\s*(?:#|mailto|javascript)/", $url->getRawUrl()))
+            ) {
+                $pass = false;
+            }
+        }
         if ($pass && !empty($this->urlPatterns)) {
             //如果设置只抓取符合抓取规则的链接，则必须要通过规则检查
             if ($this->onlyCaptureUrlPatterns) {
@@ -393,15 +463,16 @@ class Collector
      */
     public function getParser($type)
     {
+        if (isset($this->parsers[$type])) {
+            return $this->parsers[$type];
+        }
         foreach ($this->supportedParsers as $parser) {
             if (in_array($type, call_user_func([
                 $parser,
                 'getSupportTypes'
             ]))) {
-                if (! isset($this->parsers[$parser])) {
-                    $this->parsers[$parser] = new $parser($this->filesystem);
-                }
-                return $this->parsers[$parser];
+                $this->parsers[$type] = new $parser($this->filesystem);
+                return $this->parsers[$type];
             }
         }
         throw new UnsupportedTypeException('Unsupported content type');
