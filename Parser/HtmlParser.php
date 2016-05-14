@@ -6,6 +6,7 @@
 namespace Slince\Collector\Parser;
 
 use HtmlParser\ParserDom;
+use Symfony\Component\Filesystem\Filesystem;
 
 class HtmlParser extends Parser
 {
@@ -14,8 +15,9 @@ class HtmlParser extends Parser
      */
     protected $domParser;
 
-    function __construct()
+    function __construct(Filesystem $filesystem)
     {
+        parent::__construct($filesystem);
         $this->domParser = new ParserDom();
     }
 

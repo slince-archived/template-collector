@@ -6,6 +6,7 @@
 namespace Slince\Collector\Parser;
 
 use Slince\Collector\Url;
+use Slince\Collector\Repository;
 
 interface ParserInterface
 {

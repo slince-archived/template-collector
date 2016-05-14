@@ -19,14 +19,15 @@ class CssParser extends Parser
 
     /**
      * 从内容里提取所有的图片链接链接
+     * 由于字体链接与图片链接处理方式相同，谷此处一并获取
      * @param $content
      * @return array
+     * jpg|jpeg|gif|png|bmp|svg|ttf|eot|woff|otf|woff2
      */
     function extractImageUrls($content)
     {
-        $urls = preg_match("/url\s*\((.*)\)/i", function($matches){
-            return trim($matches[1], '\'"');
-        }, $content);
+        preg_match_all("/url\s*\((.*\.(?:jpg|jpeg|gif|png|bmp|svg|ttf|eot|woff|otf|woff2).*)\)/Ui", $content, $matches);
+        $urls = empty($matches[1]) ? [] : $matches[1];
         return $urls;
     }
 
@@ -37,9 +38,8 @@ class CssParser extends Parser
      */
     function extractCssUrls($content)
     {
-        $urls = preg_match("/url\s*\((.*\.css)\)/", function($matches){
-            return trim($matches[1], '\'"');
-        }, $content);
+        preg_match_all("/url\s*\((.*\.css.*)\)/Ui", $content, $matches);
+        $urls = empty($matches[1]) ? [] : $matches[1];
         return $urls;
     }
 

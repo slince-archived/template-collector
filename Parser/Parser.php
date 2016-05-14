@@ -6,9 +6,21 @@
 namespace Slince\Collector\Parser;
 
 use Slince\Collector\Url;
+use Slince\Collector\Repository;
+use Symfony\Component\Filesystem\Filesystem;
 
 abstract class Parser implements ParserInterface
 {
+
+    /**
+     * @var Filesystem
+     */
+    protected $filesystem;
+
+    function __construct(Filesystem $filesystem)
+    {
+        $this->filesystem = $filesystem;
+    }
 
     /**
      * 解析内容
@@ -24,6 +36,22 @@ abstract class Parser implements ParserInterface
         $repository->setCssUrls($this->extractCssUrls($content));
         $repository->setScriptUrls($this->extractScriptUrls($content));
         return $repository;
+    }
+
+    /**
+     * @param Filesystem $filesystem
+     */
+    public function setFilesystem(Filesystem $filesystem)
+    {
+        $this->filesystem = $filesystem;
+    }
+
+    /**
+     * @return Filesystem
+     */
+    public function getFilesystem()
+    {
+        return $this->filesystem;
     }
 
     /**
@@ -62,7 +90,9 @@ abstract class Parser implements ParserInterface
      */
     protected function createRepository(Url $url, $content)
     {
-        return new Repository($url, $content);
+        $repository = new Repository($url, $content);
+        $repository->setFilesystem($this->filesystem);
+        return $repository;
     }
 }
 

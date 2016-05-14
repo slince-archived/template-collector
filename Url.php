@@ -8,6 +8,29 @@ namespace Slince\Collector;
 class Url
 {
     /**
+     * http协议
+     * @var string
+     */
+    const SCHEME_HTTP = 'http';
+
+    /**
+     * https协议
+     * @var string
+     */
+    const SCHEME_HTTPS = 'https';
+
+    /**
+     * http协议默认端口
+     * @var int
+     */
+    const PORT_HTTP = 80;
+
+    /**
+     * https协议默认端口
+     * @var int
+     */
+    const PORT_HTTPS = 443;
+    /**
      * 协议
      * @var string
      */
@@ -49,6 +72,12 @@ class Url
      */
     protected $rawUrl;
 
+    /**
+     * 参数
+     * @var array
+     */
+    protected $parameters = [];
+
     function __construct($scheme = null, $host = null, $port = null, $path = null, $query = null, $fragment = null)
     {
         $this->setScheme($scheme);
@@ -70,16 +99,39 @@ class Url
      */
     function getUrlString()
     {
-        return http_build_query([
+        return function_exists('http_build_url') ? http_build_url([
             'scheme' => $this->scheme,
             'host' => $this->host,
             'port' => $this->port,
             'path' => $this->path,
             'query' => $this->query,
             'fragment' => $this->fragment,
-        ]);
+        ]) : $this->buildUrl();
     }
 
+    /**
+     * 构建完整的url
+     * @return string
+     */
+    protected function buildUrl()
+    {
+        $queryFragment = empty($this->query) ? '' : '?' . $this->query;
+        $fragmentFragment = empty($this->fragment) ? '' : '#' . $this->fragment;
+        return $this->getOrigin() . $this->path . $queryFragment . $fragmentFragment;
+    }
+
+    /**
+     * 获取根域名
+     * @return string
+     */
+    function getOrigin()
+    {
+        $schemeFragment = $this->scheme . '://';
+        $hostFragment = (empty($this->port) || ($this->scheme == self::SCHEME_HTTP && $this->port == self::PORT_HTTP )
+            || ($this->scheme == self::SCHEME_HTTPS && $this->port == self::PORT_HTTPS))
+            ? $this->host : "{$this->host}:{$this->port}";
+        return $schemeFragment . $hostFragment;
+    }
     /**
      * 从url字符串创建
      * @param $url
@@ -103,7 +155,7 @@ class Url
     }
     
     /**
-     * @param mixed $scheme
+     * @param string $scheme
      */
     public function setScheme($scheme)
     {
@@ -111,7 +163,7 @@ class Url
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getScheme()
     {
@@ -119,7 +171,7 @@ class Url
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getHost()
     {
@@ -127,7 +179,7 @@ class Url
     }
 
     /**
-     * @param mixed $host
+     * @param string $host
      */
     public function setHost($host)
     {
@@ -135,7 +187,7 @@ class Url
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getPort()
     {
@@ -183,7 +235,7 @@ class Url
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getFragment()
     {
@@ -191,7 +243,7 @@ class Url
     }
 
     /**
-     * @param mixed $fragment
+     * @param string $fragment
      */
     public function setFragment($fragment)
     {
@@ -212,5 +264,40 @@ class Url
     public function getRawUrl()
     {
         return $this->rawUrl;
+    }
+
+    /**
+     * @param array $parameters
+     */
+    public function setParameters(array $parameters)
+    {
+        $this->parameters = $parameters;
+    }
+
+    /**
+     * @return array
+     */
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * @param $name
+     * @param $parameter
+     */
+    function setParameter($name, $parameter)
+    {
+        $this->parameters[$name] = $parameter;
+    }
+
+    /**
+     * @param $name
+     * @param null $default
+     * @return mixed|null
+     */
+    function getParameter($name, $default = null)
+    {
+        return isset($this->parameters[$name]) ? $this->parameters[$name] : $default;
     }
 }

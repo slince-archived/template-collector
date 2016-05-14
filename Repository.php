@@ -3,9 +3,9 @@
  * slince template collector library
  * @author Tao <taosikai@yeah.net>
  */
-namespace Slince\Collector\Parser;
+namespace Slince\Collector;
 
-use Slince\Collector\Url;
+use Symfony\Component\Filesystem\Filesystem;
 
 class Repository
 {
@@ -15,6 +15,11 @@ class Repository
      */
     protected $url;
 
+    /**
+     * 内容类型
+     * @var int
+     */
+    protected $contentType;
     /**
      * 当前连接下载的内容
      * @var string
@@ -45,6 +50,11 @@ class Repository
      */
     protected $scriptUrls = [];
 
+    /**
+     * @var Filesystem
+     */
+    protected $filesystem;
+
     function __construct(Url $url, $content, array $pageUrls = [], array $imageUrls = [], array $cssUrls = [], array $scriptUrls = [])
     {
         $this->url = $url;
@@ -53,6 +63,22 @@ class Repository
         $this->imageUrls = $imageUrls;
         $this->cssUrls = $cssUrls;
         $this->scriptUrls = $scriptUrls;
+    }
+
+    /**
+     * @param Filesystem $filesystem
+     */
+    public function setFilesystem(Filesystem $filesystem)
+    {
+        $this->filesystem = $filesystem;
+    }
+
+    /**
+     * @return Filesystem
+     */
+    public function getFilesystem()
+    {
+        return $this->filesystem;
     }
 
     /**
@@ -79,7 +105,7 @@ class Repository
      */
     function setPageUrls(array $pageUrls)
     {
-        $this->pageUrls = $pageUrls;
+        $this->pageUrls = $this->handleRawUrls($pageUrls);
     }
 
     /**
@@ -88,7 +114,7 @@ class Repository
      */
     function getPageUrls()
     {
-        return array_unique($this->pageUrls);
+        return $this->pageUrls;
     }
 
     /**
@@ -97,7 +123,7 @@ class Repository
      */
     function setImageUrls(array $imageUrls)
     {
-        $this->imageUrls = $imageUrls;
+        $this->imageUrls = $this->handleRawUrls($imageUrls);
     }
 
     /**
@@ -106,7 +132,7 @@ class Repository
      */
     function getImageUrls()
     {
-        return array_unique($this->imageUrls);
+        return $this->imageUrls;
     }
 
     /**
@@ -115,7 +141,7 @@ class Repository
      */
     function setCssUrls(array $cssUrls)
     {
-        $this->cssUrls = $cssUrls;
+        $this->cssUrls = $this->handleRawUrls($cssUrls);
     }
 
     /**
@@ -124,7 +150,7 @@ class Repository
      */
     function getCssUrls()
     {
-        return array_unique($this->cssUrls);
+        return $this->cssUrls;
     }
 
     /**
@@ -133,7 +159,7 @@ class Repository
      */
     function setScriptUrls(array $scriptUrls)
     {
-        $this->scriptUrls = $scriptUrls;
+        $this->scriptUrls = $this->handleRawUrls($scriptUrls);
     }
 
     /**
@@ -142,10 +168,11 @@ class Repository
      */
     function getScriptUrls()
     {
-        return array_unique($this->scriptUrls);
+        return $this->scriptUrls;
     }
 
     /**
+     * 设置当前连接
      * @param mixed $url
      */
     public function setUrl(Url $url)
@@ -154,10 +181,68 @@ class Repository
     }
 
     /**
+     * 获取当前链接
      * @return Url
      */
     public function getUrl()
     {
         return $this->url;
+    }
+
+    /**
+     * @param int $contentType
+     */
+    public function setContentType($contentType)
+    {
+        $this->contentType = $contentType;
+    }
+
+    /**
+     * @return int
+     */
+    public function getContentType()
+    {
+        return $this->contentType;
+    }
+    
+    /**
+     * 批量处理原生url
+     * @param $rawUrls
+     * @return array
+     */
+    protected function handleRawUrls($rawUrls)
+    {
+        $rawUrls = array_unique($rawUrls);
+        $urls = [];
+        foreach ($rawUrls as $rawUrl) {
+            if (!empty($rawUrl)) {
+                $urls[] = $this->handleRawUrl($rawUrl);
+            }
+        }
+        return $urls;
+    }
+
+    /**
+     * 处理原生url
+     * @param $rawUrl
+     * @return Url
+     */
+    protected function handleRawUrl($rawUrl)
+    {
+        if (strpos($rawUrl, 'http') !== false ||substr($rawUrl, 0, 2) == '//') {
+            $newRawUrl = $rawUrl;
+        } else {
+            if ($rawUrl{0} !== '/') {
+                if ((pathinfo($this->url->getPath(), PATHINFO_EXTENSION) == '')) {
+                    $pathname = $this->url->getPath() . '/' . $rawUrl;
+                } else {
+                    $pathname = dirname($this->url->getPath()) . '/' . $rawUrl;
+                }
+            } else {
+                $pathname = $rawUrl;
+            }
+            $newRawUrl = $this->url->getOrigin() . $pathname;;
+        }
+        return Url::createFromUrl($newRawUrl);
     }
 }

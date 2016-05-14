@@ -7,7 +7,6 @@ namespace Slince\Collector;
 
 use Slince\Collector\Exception\UnsupportedTypeException;
 use Slince\Collector\Parser\ParserInterface;
-use Slince\Collector\Parser\Repository;
 use Symfony\Component\Filesystem\Filesystem;
 
 class Collector
@@ -23,6 +22,12 @@ class Collector
      * @var array
      */
     protected $urlPatterns = [];
+
+    /**
+     * 是否只抓取指定链接规则
+     * @var bool
+     */
+    protected $onlyCaptureUrlPatterns = true;
 
     /**
      * 黑名单链接
@@ -158,6 +163,23 @@ class Collector
     }
 
     /**
+     * @param boolean $onlyCaptureUrlPatterns
+     */
+    public function setOnlyCaptureUrlPatterns($onlyCaptureUrlPatterns)
+    {
+        $this->onlyCaptureUrlPatterns = $onlyCaptureUrlPatterns;
+    }
+
+    /**
+     * 是否只采集路由规则里的链接
+     * @return bool
+     */
+    public function getOnlyCaptureUrlPatterns()
+    {
+        return $this->onlyCaptureUrlPatterns;
+    }
+
+    /**
      * @param string $savePath
      */
     public function setSavePath($savePath)
@@ -237,22 +259,35 @@ class Collector
      */
     protected function processUrl(Url $url)
     {
-        if ($this->filterUrl($url->getRawUrl())) {
-            $content = $this->downloader->download($url->getRawUrl());
+        if ($this->filterUrl($url)) {
+            $content = $this->downloader->download($url);
             if ($content !== false) {
-                $repository = $this->getParser($this->getContentType($url))->parse($url, $content);
+                //获取该url对应的内容类型
+                $contentType = $this->getContentType($url);
+                //调用内容解析器提取内容包
+                $repository = $this->getParser($contentType)->parse($url, $content);
+                $repository->setContentType($contentType);
                 $this->processRepository($repository);
             }
         }
     }
 
     /**
-     * 处理内容
+     * 处理内容包
      * @param Repository $repository
      */
     protected function processRepository(Repository $repository)
     {
+//        print_r($repository);exit;
         $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
+        //如果链接没有扩展名，并且也没有预定义文件名则生成随机文件名
+        if ($repository->getUrl()->getParameter('extension') == '') {
+            $filename = $repository->getUrl()->getParameter('filename');
+            if (!$filename) {
+                $filename = $this->generateFilename();
+            }
+            $newFile .= $filename . '.html';
+        }
         $content = $repository->getContent();
         if ($repository->getUrl()->getHost() != $this->entranceUrl->getHost()) {
             if (in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)) {
@@ -261,20 +296,29 @@ class Collector
         }
         $this->filesystem->dumpFile($newFile, $content);
         $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
-        array_walk($repository->getImageUrls(), function ($url){
-            $this->processUrl(Url::createFromUrl($url));
-        });
-        array_walk($repository->getCssUrls(), function ($url){
-            $this->processUrl(Url::createFromUrl($url));
-        });
-        array_walk($repository->getScriptUrls(), function ($url){
-            $this->processUrl(Url::createFromUrl($url));
-        });
-        array_walk($repository->getPageUrls(), function ($url){
-            $this->processUrl(Url::createFromUrl($url));
-        });
+        foreach ($repository->getImageUrls() as $url) {
+            $this->processUrl($url);
+        }
+        foreach ($repository->getCssUrls() as $url) {
+            $this->processUrl($url);
+        }
+        foreach ($repository->getScriptUrls() as $url) {
+            $this->processUrl($url);
+        }
+        foreach ($repository->getPageUrls() as $url) {
+            $this->processUrl($url);
+        }
     }
 
+    /**
+     * 生存一个随机的文件名
+     * @return string
+     */
+    protected function generateFilename()
+    {
+        $string = 'abcdefghijklmnopqrstuvwxyz';
+        return substr(str_shuffle($string), 0, 10);
+    }
     /**
      * 获取内容类型
      * @param Url $url
@@ -283,44 +327,57 @@ class Collector
      */
     protected function getContentType(Url $url, $content = null)
     {
-        $extension = pathinfo($url->getRawUrl(), PATHINFO_EXTENSION);
+        $extension = pathinfo($url->getPath(), PATHINFO_EXTENSION);
         if (empty($extension)) {
-            return ParserInterface::TYPE_HTML;
+            $type = ParserInterface::TYPE_HTML;
+        } else {
+            switch (strtolower($extension)) {
+                case 'htm':
+                case 'html':
+                    $type = ParserInterface::TYPE_HTML;
+                    break;
+                case 'css':
+                    $type = ParserInterface::TYPE_CSS;
+                    break;
+                case 'js':
+                    $type = ParserInterface::TYPE_SCRIPT;
+                    break;
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'bmp':
+                case 'gif':
+                    $type = ParserInterface::TYPE_IMAGE;
+                    break;
+                default:
+                    $type = ParserInterface::TYPE_MEDIA;
+            }
         }
-        $type = ParserInterface::TYPE_MEDIA;
-        switch (strtolower($extension)) {
-            case 'css':
-                $type = ParserInterface::TYPE_CSS;
-                break;
-            case 'js':
-                $type = ParserInterface::TYPE_SCRIPT;
-                break;
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-            case 'bmp':
-            case 'gif':
-                $type = ParserInterface::TYPE_IMAGE;
-                break;
-        }
+        $url->setParameter('extension', $extension);
         return $type;
     }
 
     /**
      * 判断链接是否要继续执行
-     * @param $rawUrl
+     * @param Url $url
      * @return bool
      */
-    protected function filterUrl($rawUrl)
+    protected function filterUrl(Url $url)
     {
-        if (in_array($rawUrl, $this->downloadedUrls)) {
+        if (in_array($url->getRawUrl(), $this->downloadedUrls)) {
             return false;
         }
-        $pass = in_array($rawUrl, $this->whitelistUrls) || !in_array($rawUrl, $this->blacklistUrls);
+        $pass = in_array($url->getRawUrl(), $this->whitelistUrls) || !in_array($url->getRawUrl(), $this->blacklistUrls);
         if ($pass && !empty($this->urlPatterns)) {
-            foreach ($this->urlPatterns as $pattern) {
+            //如果设置只抓取符合抓取规则的链接，则必须要通过规则检查
+            if ($this->onlyCaptureUrlPatterns) {
+                $pass = false;
+            }
+            foreach ($this->urlPatterns as $filename => $pattern) {
                 //如果匹配到url模式，并且该模式还没有进行下载则通过
-                if (preg_match($pattern, $rawUrl) && empty($this->downloadedUrlPatterns[$pattern])) {
+                if (preg_match($pattern, $url->getRawUrl()) && empty($this->downloadedUrlPatterns[$pattern])) {
+                    //将命令的文件名存入url
+                    $url->setParameter('filename', $filename);
                     $pass = true;
                     break;
                 }
@@ -336,14 +393,13 @@ class Collector
      */
     public function getParser($type)
     {
-        $parser = null;
         foreach ($this->supportedParsers as $parser) {
             if (in_array($type, call_user_func([
                 $parser,
                 'getSupportTypes'
             ]))) {
                 if (! isset($this->parsers[$parser])) {
-                    $this->parsers[$parser] = new $parser();
+                    $this->parsers[$parser] = new $parser($this->filesystem);
                 }
                 return $this->parsers[$parser];
             }
