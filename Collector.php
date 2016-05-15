@@ -17,7 +17,7 @@ class Collector
      * 过滤url事件
      * @var string
      */
-    const EVENT_FILTER_URL = 'fileUrl';
+    const EVENT_FILTER_URL = 'filterUrl';
 
     /**
      * 采集url内容事件
@@ -107,6 +107,7 @@ class Collector
         'Slince\Collector\Parser\CssParser',
         'Slince\Collector\Parser\ImageParser',
     ];
+
     /**
      * @var Downloader
      */
@@ -155,7 +156,7 @@ class Collector
     {
         $this->whitelistUrls = $whitelistUrls;
     }
-    
+
     /**
      * @return array
      */
@@ -337,9 +338,14 @@ class Collector
         $content = $repository->getContent();
         //静态资源允许跨host
         if ($repository->getUrl()->getHost() != $this->entranceUrl->getHost()) {
-            if (in_array($repository->getContentType(), [ParserInterface::TYPE_CSS, ParserInterface::TYPE_IMAGE,
-                    ParserInterface::TYPE_SCRIPT, ParserInterface::TYPE_MEDIA])
-                && in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)) {
+            if (in_array($repository->getContentType(), [
+                    ParserInterface::TYPE_CSS,
+                    ParserInterface::TYPE_IMAGE,
+                    ParserInterface::TYPE_SCRIPT,
+                    ParserInterface::TYPE_MEDIA
+                ])
+                && in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)
+            ) {
                 $content = str_replace($repository->getUrl()->getHost(), $this->entranceUrl->getHost());
             } else {
                 return false;
@@ -362,7 +368,6 @@ class Collector
             $this->processUrl($url);
         }
         foreach ($repository->getPageUrls() as $url) {
-//            echo $url->getRawUrl(), "\r\n";
             $this->processUrl($url);
         }
     }
@@ -376,6 +381,7 @@ class Collector
         $string = 'abcdefghijklmnopqrstuvwxyz';
         return substr(str_shuffle($string), 0, 10);
     }
+
     /**
      * 获取内容类型
      * @param Url $url

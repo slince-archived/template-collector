@@ -55,8 +55,14 @@ class Repository
      */
     protected $filesystem;
 
-    function __construct(Url $url, $content, array $pageUrls = [], array $imageUrls = [], array $cssUrls = [], array $scriptUrls = [])
-    {
+    function __construct(
+        Url $url,
+        $content,
+        array $pageUrls = [],
+        array $imageUrls = [],
+        array $cssUrls = [],
+        array $scriptUrls = []
+    ) {
         $this->url = $url;
         $this->content = $content;
         $this->pageUrls = $pageUrls;
@@ -204,7 +210,7 @@ class Repository
     {
         return $this->contentType;
     }
-    
+
     /**
      * 批量处理原生url
      * @param $rawUrls
@@ -229,12 +235,12 @@ class Repository
      */
     protected function handleRawUrl($rawUrl)
     {
-        if (strpos($rawUrl, 'http') !== false ||substr($rawUrl, 0, 2) == '//') {
+        if (strpos($rawUrl, 'http') !== false || substr($rawUrl, 0, 2) == '//') {
             $newRawUrl = $rawUrl;
         } else {
             if ($rawUrl{0} !== '/') {
                 if ($this->url->getParameter('extension') == '') {
-                    $pathname = rtrim($this->url->getPath(), '') . '/' . $rawUrl;
+                    $pathname = rtrim($this->url->getPath(), '/') . '/' . $rawUrl;
                 } else {
                     $pathname = dirname($this->url->getPath()) . '/' . $rawUrl;
                 }
@@ -243,7 +249,7 @@ class Repository
             }
             $newRawUrl = $this->url->getOrigin() . $pathname;;
         }
-        $url =  Url::createFromUrl($newRawUrl);
+        $url = Url::createFromUrl($newRawUrl);
         $url->setRawUrl($rawUrl);
         return $url;
     }
