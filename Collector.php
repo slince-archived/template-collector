@@ -288,31 +288,65 @@ class Collector
     }
 
     /**
+     * 获取内容类型解析器
+     * @param $type
+     * @return ParserInterface
+     */
+    public function getParser($type)
+    {
+        if (isset($this->parsers[$type])) {
+            return $this->parsers[$type];
+        }
+        foreach ($this->supportedParsers as $parser) {
+            if (in_array($type, call_user_func([
+                $parser,
+                'getSupportTypes'
+            ]))) {
+                $this->parsers[$type] = new $parser();
+                return $this->parsers[$type];
+            }
+        }
+        throw new UnsupportedTypeException('Unsupported content type');
+    }
+
+    /**
      * 运行
      */
     public function run()
     {
         $this->entranceUrl = Url::createFromUrl($this->rawEntranceUrl);
-        $this->processUrl($this->entranceUrl);
+        $this->processUrl($this->entranceUrl, true); //入口链接直接通过filterPageUrl检查
     }
 
+    /**
+     * 生存一个随机的文件名
+     * @return string
+     */
+    protected function generateFilename()
+    {
+        $string = 'abcdefghijklmnopqrstuvwxyz';
+        return substr(str_shuffle($string), 0, 10);
+    }
 
     /**
      * 处理链接，采集处理入口
      * @param Url $url
-     * @param Repository|null $parentRepository
+     * @param boolean $passFilter
      */
-    protected function processUrl(Url $url)
+    protected function processUrl(Url $url, $passFilter = false)
     {
         if ($this->filterUrl($url)) {
             $content = $this->downloader->download($url);
             if ($content !== false) {
                 //获取该url对应的内容类型
                 $contentType = $this->getContentType($url, $content);
-                //调用内容解析器提取内容包
-                $repository = $this->getParser($contentType)->parse($url, $content);
-                $repository->setContentType($contentType); //设置内容类型
-                $this->processRepository($repository);
+                //page url要进行专属过滤
+                if ($contentType != ParserInterface::TYPE_HTML || $passFilter || $this->filterPageUrl($url)) {
+                    //调用内容解析器提取内容包
+                    $repository = $this->getParser($contentType)->parse($url, $content);
+                    $repository->setContentType($contentType); //设置内容类型
+                    $this->processRepository($repository);
+                }
             }
         }
     }
@@ -320,6 +354,7 @@ class Collector
     /**
      * 处理repository
      * @param Repository $repository
+     * @return boolean
      */
     protected function processRepository(Repository $repository)
     {
@@ -373,7 +408,11 @@ class Collector
             $newFile = rtrim($newFile, '/') . '/' . $filename . '.html';
         }
         $this->filesystem->dumpFile($newFile, $repository->getContent());
+        //当前连接记录为已下载链接，符合采集规则的链接，采集规则要记录为已下载
         $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
+        if ($pattern = $repository->getUrl()->getParameter('pattern')) {
+            $this->downloadedUrlPatterns[] = $pattern;
+        }
         //页面内容采集完毕
         $this->dispatcher->dispatch(self::EVENT_CAPTURED_URL_REPOSITORY, new Event(
             self::EVENT_CAPTURED_URL_REPOSITORY, $this, [
@@ -383,16 +422,7 @@ class Collector
         foreach ($repository->getPageUrls() as $url) {
             $this->processUrl($url);
         }
-    }
-
-    /**
-     * 生存一个随机的文件名
-     * @return string
-     */
-    protected function generateFilename()
-    {
-        $string = 'abcdefghijklmnopqrstuvwxyz';
-        return substr(str_shuffle($string), 0, 10);
+        return true;
     }
 
     /**
@@ -450,6 +480,7 @@ class Collector
             'url' => $url
         ]));
         $pass = true;
+        //不在白名单里的链接要进行合法检查
         if (!in_array($url->getRawUrl(), $this->whitelistUrls)) {
             if (in_array($url->getRawUrl(), $this->blacklistUrls) ||
                 (preg_match("/^\s*(?:#|mailto|javascript)/", $url->getRawUrl()))
@@ -457,43 +488,38 @@ class Collector
                 $pass = false;
             }
         }
-        if ($pass && !empty($this->urlPatterns)) {
-            //如果设置只抓取符合抓取规则的链接，则必须要通过规则检查
-            if ($this->onlyCaptureUrlPatterns) {
-                $pass = false;
-            }
-            foreach ($this->urlPatterns as $filename => $pattern) {
-                //如果匹配到url模式，并且该模式还没有进行下载则通过
-                if (preg_match($pattern, $url->getRawUrl()) && empty($this->downloadedUrlPatterns[$pattern])) {
-                    //将命令的文件名存入url
-                    $url->setParameter('filename', $filename);
-                    $pass = true;
-                    break;
-                }
-            }
-        }
         return $pass;
     }
 
     /**
-     * 获取内容类型解析器
-     * @param $type
-     * @return ParserInterface
+     * 页面url专属判断
+     * @param Url $url
+     * @return bool
      */
-    public function getParser($type)
+    protected function filterPageUrl(Url $url)
     {
-        if (isset($this->parsers[$type])) {
-            return $this->parsers[$type];
-        }
-        foreach ($this->supportedParsers as $parser) {
-            if (in_array($type, call_user_func([
-                $parser,
-                'getSupportTypes'
-            ]))) {
-                $this->parsers[$type] = new $parser();
-                return $this->parsers[$type];
+        //host和入口链接host不一致的不抓取
+        if ($url->getHost() == $this->entranceUrl->getHost()) {
+            $pass = true;
+            if (!empty($this->urlPatterns)) {
+                //如果设置只抓取符合抓取规则的链接，则必须要通过规则检查
+                if ($this->onlyCaptureUrlPatterns) {
+                    $pass = false;
+                }
+                foreach ($this->urlPatterns as $filename => $pattern) {
+                    //如果匹配到url模式，并且该模式还没有进行下载则通过
+                    if (preg_match($pattern, $url->getRawUrl()) && !in_array($pattern, $this->downloadedUrlPatterns)) {
+                        //将命令的文件名存入url
+                        $url->setParameter('filename', $filename);
+                        $url->setParameter('pattern', $pattern);
+                        $pass = true;
+                        break;
+                    }
+                }
             }
+        } else {
+            $pass = false;
         }
-        throw new UnsupportedTypeException('Unsupported content type');
+        return $pass;
     }
 }
