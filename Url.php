@@ -126,9 +126,10 @@ class Url
      */
     function getOrigin()
     {
-        $schemeFragment = $this->scheme . '://';
-        $hostFragment = (empty($this->port) || ($this->scheme == self::SCHEME_HTTP && $this->port == self::PORT_HTTP )
-            || ($this->scheme == self::SCHEME_HTTPS && $this->port == self::PORT_HTTPS))
+        $scheme = $this->getScheme();
+        $schemeFragment = $scheme . '://';
+        $hostFragment = (empty($this->port) || ($scheme == self::SCHEME_HTTP && $this->port == self::PORT_HTTP )
+            || ($scheme == self::SCHEME_HTTPS && $this->port == self::PORT_HTTPS))
             ? $this->host : "{$this->host}:{$this->port}";
         return $schemeFragment . $hostFragment;
     }
@@ -167,7 +168,7 @@ class Url
      */
     public function getScheme()
     {
-        return $this->scheme;
+        return $this->scheme ?: self::SCHEME_HTTP;
     }
 
     /**

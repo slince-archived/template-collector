@@ -371,9 +371,9 @@ class Collector
                 //静态资源所属父级repository的content要进行替换
                 $parentRepository = $repository->getUrl()->getParameter('repository');
                 if (!is_null($parentRepository)) {
-                    $parentRepository->setContent(str_replace(
-                        $repository->getUrl()->getHost(),
-                        $this->entranceUrl->getHost(),
+                    $parentRepository->setContent(preg_replace(
+                        "#(?:http)?s?:?(?://)?{$repository->getUrl()->getHost()}#",
+                        '',
                         $parentRepository->getContent()
                     ));
                 }
@@ -389,13 +389,13 @@ class Collector
             self::EVENT_CAPTURE_URL_REPOSITORY, $this, [
             'repository' => $repository
         ]));
-        foreach ($repository->getImageUrls() as $url) {
-            $this->processUrl($url);
-        }
         foreach ($repository->getCssUrls() as $url) {
             $this->processUrl($url);
         }
         foreach ($repository->getScriptUrls() as $url) {
+            $this->processUrl($url);
+        }
+        foreach ($repository->getImageUrls() as $url) {
             $this->processUrl($url);
         }
         $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
@@ -434,30 +434,27 @@ class Collector
     protected function getContentType(Url $url, $content = null)
     {
         $extension = pathinfo($url->getPath(), PATHINFO_EXTENSION);
-        if (empty($extension)) {
-            $type = ParserInterface::TYPE_HTML;
-        } else {
-            switch (strtolower($extension)) {
-                case 'htm':
-                case 'html':
-                    $type = ParserInterface::TYPE_HTML;
-                    break;
-                case 'css':
-                    $type = ParserInterface::TYPE_CSS;
-                    break;
-                case 'js':
-                    $type = ParserInterface::TYPE_SCRIPT;
-                    break;
-                case 'jpg':
-                case 'jpeg':
-                case 'png':
-                case 'bmp':
-                case 'gif':
-                    $type = ParserInterface::TYPE_IMAGE;
-                    break;
-                default:
-                    $type = ParserInterface::TYPE_MEDIA;
-            }
+        switch (strtolower($extension)) {
+            case '':
+            case 'htm':
+            case 'html':
+                $type = ParserInterface::TYPE_HTML;
+                break;
+            case 'css':
+                $type = ParserInterface::TYPE_CSS;
+                break;
+            case 'js':
+                $type = ParserInterface::TYPE_SCRIPT;
+                break;
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'bmp':
+            case 'gif':
+                $type = ParserInterface::TYPE_IMAGE;
+                break;
+            default:
+                $type = ParserInterface::TYPE_HTML;
         }
         $url->setParameter('extension', $extension);
         return $type;
