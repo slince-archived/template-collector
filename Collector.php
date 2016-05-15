@@ -296,9 +296,11 @@ class Collector
         $this->processUrl($this->entranceUrl);
     }
 
+
     /**
-     * 处理链接
+     * 处理链接，采集处理入口
      * @param Url $url
+     * @param Repository|null $parentRepository
      */
     protected function processUrl(Url $url)
     {
@@ -306,36 +308,21 @@ class Collector
             $content = $this->downloader->download($url);
             if ($content !== false) {
                 //获取该url对应的内容类型
-                $contentType = $this->getContentType($url);
+                $contentType = $this->getContentType($url, $content);
                 //调用内容解析器提取内容包
                 $repository = $this->getParser($contentType)->parse($url, $content);
-                $repository->setContentType($contentType);
+                $repository->setContentType($contentType); //设置内容类型
                 $this->processRepository($repository);
             }
         }
     }
 
     /**
-     * 处理内容包
+     * 处理repository
      * @param Repository $repository
      */
     protected function processRepository(Repository $repository)
     {
-        //页面内容开始采集
-        $this->dispatcher->dispatch(self::EVENT_CAPTURE_URL_REPOSITORY, new Event(
-            self::EVENT_CAPTURE_URL_REPOSITORY, $this, [
-            'repository' => $repository
-        ]));
-        $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
-        //如果链接没有扩展名，并且也没有预定义文件名则生成随机文件名
-        if ($repository->getUrl()->getParameter('extension') == '') {
-            $filename = $repository->getUrl()->getParameter('filename');
-            if (!$filename) {
-                $filename = $this->generateFilename();
-            }
-            $newFile = rtrim($newFile, '/') . '/' . $filename . '.html';
-        }
-        $content = $repository->getContent();
         //静态资源允许跨host
         if ($repository->getUrl()->getHost() != $this->entranceUrl->getHost()) {
             if (in_array($repository->getContentType(), [
@@ -346,16 +333,25 @@ class Collector
                 ])
                 && in_array($repository->getUrl()->getHost(), $this->allowedCaptureHosts)
             ) {
-                $content = str_replace($repository->getUrl()->getHost(), $this->entranceUrl->getHost());
+                //静态资源所属父级repository的content要进行替换
+                $parentRepository = $repository->getUrl()->getParameter('repository');
+                if (!is_null($parentRepository)) {
+                    $parentRepository->setContent(str_replace(
+                        $repository->getUrl()->getHost(),
+                        $this->entranceUrl->getHost(),
+                        $parentRepository->getContent()
+                    ));
+                }
             } else {
                 return false;
             }
         }
-        $this->filesystem->dumpFile($newFile, $content);
-        $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
-        //页面内容采集完毕
-        $this->dispatcher->dispatch(self::EVENT_CAPTURED_URL_REPOSITORY, new Event(
-            self::EVENT_CAPTURED_URL_REPOSITORY, $this, [
+        /*
+         * 开始采集当前repository，优先采集当页所有的资源文件再采集页面本身，以免因为资源文件判断会对
+         * 页面本身内容的修改调整
+         */
+        $this->dispatcher->dispatch(self::EVENT_CAPTURE_URL_REPOSITORY, new Event(
+            self::EVENT_CAPTURE_URL_REPOSITORY, $this, [
             'repository' => $repository
         ]));
         foreach ($repository->getImageUrls() as $url) {
@@ -367,6 +363,23 @@ class Collector
         foreach ($repository->getScriptUrls() as $url) {
             $this->processUrl($url);
         }
+        $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
+        //如果链接没有扩展名，并且也没有预定义文件名则生成随机文件名
+        if ($repository->getUrl()->getParameter('extension') == '') {
+            $filename = $repository->getUrl()->getParameter('filename');
+            if (!$filename) {
+                $filename = $this->generateFilename();
+            }
+            $newFile = rtrim($newFile, '/') . '/' . $filename . '.html';
+        }
+        $this->filesystem->dumpFile($newFile, $repository->getContent());
+        $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
+        //页面内容采集完毕
+        $this->dispatcher->dispatch(self::EVENT_CAPTURED_URL_REPOSITORY, new Event(
+            self::EVENT_CAPTURED_URL_REPOSITORY, $this, [
+            'repository' => $repository
+        ]));
+        //采集当页的其它链接，其它链接的采集不属于一个采集周期
         foreach ($repository->getPageUrls() as $url) {
             $this->processUrl($url);
         }
@@ -477,7 +490,7 @@ class Collector
                 $parser,
                 'getSupportTypes'
             ]))) {
-                $this->parsers[$type] = new $parser($this->filesystem);
+                $this->parsers[$type] = new $parser();
                 return $this->parsers[$type];
             }
         }

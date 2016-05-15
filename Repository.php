@@ -5,8 +5,6 @@
  */
 namespace Slince\Collector;
 
-use Symfony\Component\Filesystem\Filesystem;
-
 class Repository
 {
     /**
@@ -50,11 +48,6 @@ class Repository
      */
     protected $scriptUrls = [];
 
-    /**
-     * @var Filesystem
-     */
-    protected $filesystem;
-
     function __construct(
         Url $url,
         $content,
@@ -69,22 +62,6 @@ class Repository
         $this->imageUrls = $imageUrls;
         $this->cssUrls = $cssUrls;
         $this->scriptUrls = $scriptUrls;
-    }
-
-    /**
-     * @param Filesystem $filesystem
-     */
-    public function setFilesystem(Filesystem $filesystem)
-    {
-        $this->filesystem = $filesystem;
-    }
-
-    /**
-     * @return Filesystem
-     */
-    public function getFilesystem()
-    {
-        return $this->filesystem;
     }
 
     /**
@@ -251,6 +228,8 @@ class Repository
         }
         $url = Url::createFromUrl($newRawUrl);
         $url->setRawUrl($rawUrl);
+        //将链接所属的repository记录下来
+        $url->setParameter('repository', $this);
         return $url;
     }
 }
