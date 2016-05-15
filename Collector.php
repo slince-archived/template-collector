@@ -436,6 +436,9 @@ class Collector
         $extension = pathinfo($url->getPath(), PATHINFO_EXTENSION);
         switch (strtolower($extension)) {
             case '':
+            case 'php':
+            case 'jsp':
+            case 'py':
             case 'htm':
             case 'html':
                 $type = ParserInterface::TYPE_HTML;
@@ -454,7 +457,7 @@ class Collector
                 $type = ParserInterface::TYPE_IMAGE;
                 break;
             default:
-                $type = ParserInterface::TYPE_HTML;
+                $type = ParserInterface::TYPE_MEDIA;
         }
         $url->setParameter('extension', $extension);
         return $type;
