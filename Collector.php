@@ -17,7 +17,7 @@ class Collector
      * 过滤url事件
      * @var string
      */
-    const EVENT_FILTER_URL = 'filterUrl';
+    const EVENT_FILTERED_URL = 'filteredUrl';
 
     /**
      * 采集url内容事件
@@ -474,11 +474,6 @@ class Collector
         if (in_array($url->getRawUrl(), $this->downloadedUrls)) {
             return false;
         }
-        //触发过滤url事件
-        $this->dispatcher->dispatch(self::EVENT_FILTER_URL, new Event(
-            self::EVENT_FILTER_URL, $this, [
-            'url' => $url
-        ]));
         $pass = true;
         //不在白名单里的链接要进行合法检查
         if (!in_array($url->getRawUrl(), $this->whitelistUrls)) {
@@ -488,6 +483,12 @@ class Collector
                 $pass = false;
             }
         }
+        //触发过滤结束url事件
+        $this->dispatcher->dispatch(self::EVENT_FILTERED_URL, new Event(
+            self::EVENT_FILTERED_URL, $this, [
+            'url' => $url,
+            'pass' => $pass
+        ]));
         return $pass;
     }
 

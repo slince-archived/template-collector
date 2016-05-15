@@ -30,7 +30,7 @@ $collector->run();
 ### 事件绑定
 事件绑定是可选的，如果不绑定事件采集器依然可以正常进行，但如果您需要知道采集器进度，绑定事件是个不二的选择；目前采集器
 支持三种事件，
-- `Collector::EVENT_FILTER_URL` url筛选事件，当采集器判断一个新链接是否需要被处理的时候触发
+- `Collector::EVENT_FILTERED_URL` url筛选结束事件，当采集器判断完成一个新链接是否需要被处理的时候触发
 - `Collector::EVENT_CAPTURE_URL_REPOSITORY` 开始采集页面事件，当链接内容下载完毕开始处理采集时触发
 - `Collector::EVENT_CAPTURED_URL_REPOSITORY` 页面采集完成事件，当链接内容采集完毕时触发
 
