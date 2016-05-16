@@ -15,7 +15,7 @@
 use Slince\Collector\Collector;
 use Slince\Event\Event;
 
-$savePath = __DIR__ . '/html'; //保存路径
+$savePath = __DIR__ . '/html'; //模板保存路径
 $entranceUrl = 'http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html'; //入口链接
 //创建采集器
 $collector = new Collector($savePath, $entranceUrl);
