@@ -1,5 +1,5 @@
 {
-    "name": "slince/collector",
+    "name": "slince/template-collector",
     "description": "Template collector",
     "type": "library",
     "license": "Apache-2.0",
