@@ -3,12 +3,19 @@
 通用模板采集器基本组件
 
 ## 安装
+
  * 要求
     - php >= 5.5.9
+
  * 基于composer安装
-  `composer require slince/template-collector *@dev `
-   或者安装到全局目录
-   `composer global require slince/template-collector *@dev `
+
+  ```
+  composer require slince/template-collector *@dev
+  ```
+  或者安装到全局目录
+  ```
+  composer global require slince/template-collector *@dev
+  ```
 ## 使用
 
 ### 基本用法
@@ -19,9 +26,13 @@
 collector capture [目标网址]
 ```
 例：
-`collector capture http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html`
+```
+collector capture http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html
+```
 查看使用帮助
-`collector capture --help`
+```
+collector capture --help
+```
 
 - 作为基本组件使用
 
