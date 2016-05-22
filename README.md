@@ -16,9 +16,8 @@
   ```
   composer global require slince/template-collector *@dev
   ```
-## 使用
 
-### 基本用法
+## 基本用法
 
 - 基于命令行使用
 
