@@ -32,6 +32,7 @@ collector capture http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban117
 ```
 collector capture --help
 ```
+你最好将vendor/bin目录添加到全局路径下，否则可能无法查找到命令
 
 - 作为基本组件使用
 
