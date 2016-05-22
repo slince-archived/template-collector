@@ -2,7 +2,7 @@
 <?php
 use Slince\Collector\CommandUI;
 
-foreach ([__DIR__ . '/../../vendor/autoload.php'
+foreach ([__DIR__ . '/../../../vendor/autoload.php'
      , __DIR__ . '/../../vendor/autoload.php'
      , __DIR__ . '/vendor/autoload.php'] as $autoloadFile) {
     if (is_file($autoloadFile)) {
