@@ -18,8 +18,10 @@
 ```
 collector capture [目标网址]
 ```
-例：`collector capture http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html`
-查看使用帮助 `collector capture --help`
+例：
+`collector capture http://demo.sc.chinaz.com/Files/DownLoad/moban/201604/moban1178/index.html`
+查看使用帮助
+`collector capture --help`
 
 - 作为基本组件使用
 
