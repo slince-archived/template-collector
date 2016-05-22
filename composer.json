@@ -14,7 +14,8 @@
         "php": ">=5.5.9",
         "slince/event": "*",
         "bupt1987/html-parser": "~3.0",
-        "symfony/filesystem": "~3.0"
+        "symfony/filesystem": "~3.0",
+        "symfony/console": "~3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
@@ -23,5 +24,8 @@
         "psr-4": {
             "Slince\\Collector\\": "./"
         }
-    }
+    },
+    "bin": [
+        "collector"
+    ]
 }
