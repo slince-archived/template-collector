@@ -41,7 +41,7 @@ class CommandUI extends BaseCommand
     function configure()
     {
         $this->setName('capture')
-            ->addArgument('url', InputArgument::REQUIRED, 'Entrance url,collector will collect from this link')
+            ->addArgument('url', InputArgument::VALUE_OPTIONAL, 'Entrance url,collector will collect from this link')
             ->addOption('savepath', null, InputOption::VALUE_OPTIONAL, 'Template save path', './')
             ->addOption('whitelist',null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Whitelist url,colllector will collect')
             ->addOption('blacklist', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Blacklist url,colllector will not collect')
@@ -90,7 +90,15 @@ class CommandUI extends BaseCommand
         $allowCaptureHosts = $input->getOption('hosts');
         $urlPatterns = $input->getOption('patterns');
         $onlyCaptureUrlPatterns = $input->getOption('onlyPatterns');
-        return [$entranceUrl, $savePath, $whitelistUrls, $blacklistUrls, $allowCaptureHosts, $urlPatterns, $onlyCaptureUrlPatterns];
+        return [
+            'url' => $entranceUrl,
+            'savepath' => $savePath,
+            'whitelist' => $whitelistUrls,
+            'blacklist' => $blacklistUrls,
+            'hosts' => $allowCaptureHosts,
+            'patterns' => $urlPatterns,
+            'onlyPatterns' => $onlyCaptureUrlPatterns
+        ];
     }
 
     /**
