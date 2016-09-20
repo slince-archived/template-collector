@@ -41,7 +41,7 @@ class CommandUI extends BaseCommand
     function configure()
     {
         $this->setName('capture')
-            ->addArgument('url', InputArgument::VALUE_OPTIONAL, 'Entrance url,collector will collect from this link')
+            ->addArgument('url', InputArgument::OPTIONAL, 'Entrance url,collector will collect from this link')
             ->addOption('savepath', null, InputOption::VALUE_OPTIONAL, 'Template save path', './')
             ->addOption('whitelist',null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Whitelist url,colllector will collect')
             ->addOption('blacklist', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Blacklist url,colllector will not collect')

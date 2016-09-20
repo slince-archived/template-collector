@@ -388,7 +388,7 @@ class Collector
         foreach ($repository->getImageUrls() as $url) {
             $this->processUrl($url);
         }
-        $newFile =  $this->generateFilename();
+        $newFile =  $this->generateFilename($repository);
         $this->filesystem->dumpFile($newFile, $repository->getContent());
         //当前连接记录为已下载链接，符合采集规则的链接，采集规则要记录为已下载
         $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
