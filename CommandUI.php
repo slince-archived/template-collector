@@ -31,7 +31,7 @@ class CommandUI extends BaseCommand
      * 默认的采集器配置文件名
      * var string
      */
-    const CONFIG_FILE = 'colector.json';
+    const CONFIG_FILE = 'collector.json';
 
     function initialize(InputInterface $input, OutputInterface $output)
     {
