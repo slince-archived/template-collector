@@ -70,9 +70,18 @@ class HtmlParser extends Parser
     {
         $this->domParser->load($content);
         $scriptNodes = $this->domParser->find('script');
-        return array_map(function($scriptNode){
+        $urls = array_map(function($scriptNode){
             return $scriptNode->getAttr('src');
         }, $scriptNodes);
+        if (preg_match("#pagesFile\('(.*)'\)#", $content, $matches)) {
+            $jsUrls =  array_map(function($urlName){
+                $urlName = trim($urlName);
+                return "http://www.chinabrands.com/static/scripts.src/pages/{$urlName}.js";
+            }, explode(',', $matches[1]));
+        } else {
+            $jsUrls = [];
+        }
+        return array_merge($urls, $jsUrls);
     }
 
     /**

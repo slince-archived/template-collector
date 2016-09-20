@@ -105,6 +105,7 @@ class Collector
     protected $supportedParsers = [
         'Slince\Collector\Parser\HtmlParser',
         'Slince\Collector\Parser\CssParser',
+        'Slince\Collector\Parser\ScriptParser',
         'Slince\Collector\Parser\ImageParser',
     ];
 

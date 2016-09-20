@@ -5,7 +5,7 @@
  */
 namespace Slince\Collector\Parser;
 
-class ImageParser extends Parser
+class ScriptParser extends Parser
 {
     /**
      * 从内容里提取所有的页面链接
@@ -44,15 +44,19 @@ class ImageParser extends Parser
      */
     function extractScriptUrls($content)
     {
-        return [];
+        if (preg_match('#require\(\[([\s\S]+)\]#mU', $content, $matches)) {
+            $urls = array_map(function($urlFragment){
+                $urlFragment = preg_replace('#\s#', '', $urlFragment);
+                return "http://www.chinabrands.com/static/scripts.src/" . trim($urlFragment, "'") . '.js';
+            }, explode(',', $matches[1]));
+        } else {
+            $urls = [];
+        }
+        return $urls;
     }
 
-    /**
-     * 获取当前解析器支持的类型
-     * @return array
-     */
-    static function getSupportTypes()
+    public static function getSupportTypes()
     {
-        return [ParserInterface::TYPE_IMAGE, ParserInterface::TYPE_MEDIA];
+        return [ParserInterface::TYPE_SCRIPT];
     }
 }

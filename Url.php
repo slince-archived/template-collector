@@ -140,6 +140,12 @@ class Url
      */
     public static function createFromUrl($url)
     {
+        //script链接转换成源码下载
+        $url = str_replace([
+            'scripts.build'
+        ], [
+            'scripts.src'
+        ], $url);
         $fragments = parse_url($url);
         if ($fragments === false) {
             $fragments = array();
