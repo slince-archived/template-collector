@@ -319,16 +319,6 @@ class Collector
     }
 
     /**
-     * 生存一个随机的文件名
-     * @return string
-     */
-    protected function generateFilename()
-    {
-        $string = 'abcdefghijklmnopqrstuvwxyz';
-        return substr(str_shuffle($string), 0, 10);
-    }
-
-    /**
      * 处理链接，采集处理入口
      * @param Url $url
      * @param boolean $passFilter
@@ -398,15 +388,7 @@ class Collector
         foreach ($repository->getImageUrls() as $url) {
             $this->processUrl($url);
         }
-        $newFile = $this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath();
-        //如果链接没有扩展名，并且也没有预定义文件名则生成随机文件名
-        if ($repository->getUrl()->getParameter('extension') == '') {
-            $filename = $repository->getUrl()->getParameter('filename');
-            if (!$filename) {
-                $filename = $this->generateFilename();
-            }
-            $newFile = rtrim($newFile, '/') . '/' . $filename . '.html';
-        }
+        $newFile =  $this->generateFilename();
         $this->filesystem->dumpFile($newFile, $repository->getContent());
         //当前连接记录为已下载链接，符合采集规则的链接，采集规则要记录为已下载
         $this->downloadedUrls[] = $repository->getUrl()->getRawUrl();
@@ -423,6 +405,34 @@ class Collector
             $this->processUrl($url);
         }
         return true;
+    }
+
+    /**
+     * 生成文件名
+     * @param Repository $repository
+     * @return string
+     */
+    protected function generateFileName(Repository $repository)
+    {
+        $newFile = rtrim($this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath(), '/');
+        if ($repository->getUrl()->getParameter('extension') == '') {
+            $filename = $repository->getUrl()->getParameter('filename');
+            if (!$filename) {
+                $unavailable = true;
+                $index = 0;
+                while ($unavailable) {
+                    $newFile .= "/index{$index}.html";
+                    if (!$this->filesystem->exists($newFile)) {
+                        $unavailable = false;
+                    } else {
+                        $index ++;
+                    }
+                }
+            } else {
+                $newFile .= "/{$filename}.html";
+            }
+        }
+        return $newFile;
     }
 
     /**
