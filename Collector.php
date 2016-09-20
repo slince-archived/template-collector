@@ -414,16 +414,17 @@ class Collector
      */
     protected function generateFileName(Repository $repository)
     {
-        $newFile = rtrim($this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath(), '/');
+        $newFile = rtrim($this->savePath . DIRECTORY_SEPARATOR . $repository->getUrl()->getPath(), '\\/');
         if ($repository->getUrl()->getParameter('extension') == '') {
             $filename = $repository->getUrl()->getParameter('filename');
             if (!$filename) {
                 $unavailable = true;
                 $index = 0;
                 while ($unavailable) {
-                    $newFile .= "/index{$index}.html";
-                    if (!$this->filesystem->exists($newFile)) {
+                    $newFilePath = $newFile . "/index{$index}.html";
+                    if (!$this->filesystem->exists($newFilePath)) {
                         $unavailable = false;
+                        $newFile = $newFilePath;
                     } else {
                         $index ++;
                     }

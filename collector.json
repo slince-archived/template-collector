@@ -1,0 +1,12 @@
+{
+    "url": "http://www.chinabrands.com",
+    "savepath": "./chinabrand",
+    "whitelist": [],
+    "blacklist": [],
+    "hosts": ["www.chinabrands.com"],
+    "patterns": [
+        "#www.chinabrands.com/category/[\\w\\-]+-c_\\d+.html#",
+        "#www.chinabrands.com/item/product\\d+\\.html#"
+    ],
+    "onlyPatterns": false
+}
